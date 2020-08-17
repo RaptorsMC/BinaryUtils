@@ -18,6 +18,11 @@
  * @license RaptorsMC/CustomLicense
  */
 import Buffer from 'https://deno.land/std/node/buffer.ts';
+import { readUIntBE, readUIntLE } from './buffer/readUInt.ts';
+import { readIntBE, readIntLE } from './buffer/readInt.ts';
+import { writeUIntBE, writeUIntLE } from './buffer/writeUInt.ts';
+import { writeIntBE, writeIntLE } from './buffer/writeInt.ts';
+
 class BinaryStream {
     private _buffer: Buffer;
     private _offset: number;
@@ -123,11 +128,18 @@ class BinaryStream {
     }
 
     /**
-     * Reads a 3 byte signed big endian number
+     * Reads a 3 byte unsigned big endian number
      */
-    public readTriad(): number {
-        return this._buffer.readInt16BE(this.addOffset(3), /** 3 */);
-        //readUIntLE
+    public readTriad(): bigint {
+        // we need to replicate readUIntLE
+        return readUIntBE(this._buffer, this.addOffset(3), 3);
+    }
+
+    /**
+     * Reads a 3 byte unsigned little endian number
+     */
+    public readLTriad(): number {
+        return readUIntLE(this._buffer, this.addOffset(3), 3);
     }
 
     /**
@@ -135,24 +147,17 @@ class BinaryStream {
      */
     public writeTriad(v: number): void {
         let buffer = Buffer.alloc(3);
-        buffer.writeUInt16BE(v, 0); //,3
+        writeUIntBE(buffer, v, 0, 3);
         this.append(buffer);
     }
 
-    /**
-     * Reads a 3 byte signed little endian number
-     */
-    public readLTriad(): number {
-        return this._buffer.readUInt16LE(this.addOffset(3)/**, 3 */);
-    }
 
     /**
      * Reads a 3 byte unsigned little endian number
      */
     public writeLTriad(v: number) {
         let buf = Buffer.alloc(3);
-        buf.byteLength;
-        buf.writeUInt32LE(v, 0/**, 3 */); // 3 bytes?
+        writeUIntLE(buf, v, 0, 3);
         this.append(buf);
     }
 
