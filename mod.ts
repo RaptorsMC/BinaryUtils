@@ -18,3 +18,14 @@
  * @license RaptorsMC/CustomLicense
  */
 export { default as BinaryStream } from './lib/BinaryStream.ts';
+// Buffer Utils
+export { readIntBE as readIntBE } from './lib/buffer/readInt.ts';
+export { readIntLE as readIntLE } from './lib/buffer/readInt.ts';
+export { readUIntBE as readUIntBE } from './lib/buffer/readUInt.ts';
+export { readUIntLE as readUIntLE } from './lib/buffer/readUInt.ts';
+export { writeIntBE as writeIntBE } from './lib/buffer/writeInt.ts';
+export { writeIntLE as writeIntLE } from './lib/buffer/writeInt.ts';
+export { writeUIntBE as writeUIntBE } from './lib/buffer/writeUInt.ts';
+export { writeUIntLE as writeUIntLE } from './lib/buffer/writeUInt.ts';
+// Buffer external
+export { ExtendedBuffer as ExtendedBuffer } from './lib/buffer/ExtendedBuffer.ts';
