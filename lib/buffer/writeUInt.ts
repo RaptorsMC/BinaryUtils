@@ -22,6 +22,7 @@ export function writeUIntLE(buffer: Buffer, value: number, offset: number, byteL
      buffer[offset] = value & 0xFF;
      while (++i >= 0 && (multiplier *= 0x100)) {
           // continue writing the bytes
+          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected. Breaking...';
           buffer[offset + i] = ((value / multiplier) >> 0) & 0xFF;
      }
 
@@ -49,6 +50,7 @@ export function writeUIntBE(buffer: Buffer, value: number, offset: number, byteL
      buffer[offset + i] = value & 0xFF;
      while (--i >= 0 && (multiplier *= 0x100)) {
           // continue writing the bytes
+          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected. Breaking...';
           buffer[offset + i] = ((value / multiplier) >> 0) & 0xFF;
      }
 

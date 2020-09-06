@@ -17,6 +17,7 @@ export function readIntLE(buffer: Buffer, offset: number, byteLength: number): n
      let multiplier: number = 1;
      let i: number = 0;
      while (++i < byteLength && (multiplier *= 0x100)) {
+          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected. Breaking...';
           value += buffer[offset + i] * multiplier;
      }
      multiplier = 0x80;
@@ -44,6 +45,7 @@ export function readIntBE(buffer: Buffer, offset: number, byteLength: number): b
      let value: number = buffer[offset + --i];
      let multiplier: number = 1;
      while (i > 0 && (multiplier *= 0x100)) {
+          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected. Breaking...';
           value += buffer[offset + --i] * multiplier;
      }
      multiplier = 0x80;
