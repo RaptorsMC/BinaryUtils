@@ -20,9 +20,10 @@ export function writeUIntLE(buffer: Buffer, value: number, offset: number, byteL
      let i: number = 0;
      let multiplier: number = 1;
      buffer[offset] = value & 0xFF;
-     while (++i >= 0 && (multiplier *= 0x100)) {
+     // check if its less than the byte length, otherwise stop (IM SO DUMB!)
+     while (++i < byteLength && (multiplier *= 0x100)) {
           // continue writing the bytes
-          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing UINTLE. Breaking...';
+          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing UIntLE. Breaking...';
           buffer[offset + i] = ((value / multiplier) >> 0) & 0xFF;
      }
 
@@ -48,9 +49,10 @@ export function writeUIntBE(buffer: Buffer, value: number, offset: number, byteL
      let i: number = byteLength - 1;
      let multiplier: number = 1;
      buffer[offset + i] = value & 0xFF;
+     // In theory this should never cause issues, however it may, so in that case we're keeping recusive guard
      while (--i >= 0 && (multiplier *= 0x100)) {
           // continue writing the bytes
-          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing UINTBE. Breaking...';
+          if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing UIntBE. Breaking...';
           buffer[offset + i] = ((value / multiplier) >> 0) & 0xFF;
      }
 
