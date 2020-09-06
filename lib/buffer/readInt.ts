@@ -34,7 +34,7 @@ export function readIntLE(buffer: Buffer, offset: number, byteLength: number): n
  * @param offset 
  * @param byteLength 
  */
-export function readIntBE(buffer: Buffer, offset: number, byteLength: number): bigint {
+export function readIntBE(buffer: Buffer, offset: number, byteLength: number = 1024): bigint {
      // Shift our unsigned integers right. (checking)
      offset = offset >>> 0;
      byteLength = byteLength >>> 0;
