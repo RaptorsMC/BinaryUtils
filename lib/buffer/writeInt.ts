@@ -1,4 +1,4 @@
-import Buffer from 'https://deno.land/std/node/buffer.ts';
+import type Buffer from 'https://deno.land/std/node/buffer.ts';
 import { checkOffset, checkInt } from './utils.ts';
 
 /**
