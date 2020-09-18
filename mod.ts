@@ -29,3 +29,4 @@ export { writeUIntBE as writeUIntBE } from './lib/buffer/writeUInt.ts';
 export { writeUIntLE as writeUIntLE } from './lib/buffer/writeUInt.ts';
 // Buffer external
 export { ExtendedBuffer as ExtendedBuffer } from './lib/buffer/ExtendedBuffer.ts';
+export { bufferToHex as bufferToHex } from './lib/buffer/bufferToHex.ts';
