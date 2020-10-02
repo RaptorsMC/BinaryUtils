@@ -18,25 +18,21 @@
  * @license RaptorsMC/CustomLicense
  */
 import Buffer from 'https://deno.land/std/node/buffer.ts';
-import { readUIntBE, readUIntLE } from './buffer/readUInt.ts';
-import { readIntBE, readIntLE } from './buffer/readInt.ts';
-import { writeUIntBE, writeUIntLE } from './buffer/writeUInt.ts';
-import { writeIntBE, writeIntLE } from './buffer/writeInt.ts';
 
 class BinaryStream {
-    private _buffer: Buffer;
-    private _offset: number;
+    protected buffer: Buffer;
+    protected offset: number;
 
     constructor(buffer: Buffer = Buffer.alloc(0), offset: number = 0) {
-        this._buffer = buffer;
-        this._offset = offset;
+        this.buffer = buffer;
+        this.offset = offset;
     }
 
     /**
      * Appends a buffer to the binary one.
      */
-    public append(buffer: Buffer): void {
-        this._buffer = Buffer.concat([this._buffer, buffer]);
+    public write(buffer: Buffer|Uint8Array): void {
+        this.buffer = Buffer.concat([this.buffer, buffer]);
         this.addOffset(Buffer.byteLength(buffer));
     }
 
@@ -45,28 +41,28 @@ class BinaryStream {
      * from the actual offset to the offset + len
      */
     public read(len: number): Buffer {
-        return this._buffer.slice(this._offset, this.addOffset(len, true));
+        return this.buffer.slice(this.offset, this.addOffset(len));
     }
 
     /**
      * Reads an unsigned byte (0 - 255)
      */
     public readByte(): number {
-        return this._buffer.readUInt8(this.addOffset(1));
+        return this.buffer.readUInt8(this.addOffset(1));
     }
 
     /**
      * Reads a signed byte (-128 - 127)
      */
     public readSignedByte(): number {
-        return this._buffer.readInt8(this.addOffset(1));
+        return this.buffer.readInt8(this.addOffset(1));
     }
 
     /**
      * Writes an unsigned / signed byte 
      */
     public writeByte(v: number): void {
-        this.append(Buffer.from([v & 0xff]));
+        this.write(Buffer.from([v & 0xff]));
     }
 
     /**
@@ -87,14 +83,14 @@ class BinaryStream {
      * Reads a 16 bit unsigned big endian number
      */
     public readShort(): number {
-        return this._buffer.readUInt16BE(this.addOffset(2));
+        return this.buffer.readUInt16BE(this.addOffset(2));
     }
 
     /**
      * Reads a 16 bit signed big endian number
      */
     public readSignedShort(): number {
-        return this._buffer.readInt16BE(this.addOffset(2));
+        return this.buffer.readInt16BE(this.addOffset(2));
     }
 
     /**
@@ -109,14 +105,14 @@ class BinaryStream {
      * Reads an unsigned 16 bit little endian number
      */
     public readLShort(): number {
-        return this._buffer.readUInt16LE(this.addOffset(2));
+        return this.buffer.readUInt16LE(this.addOffset(2));
     }
 
     /**
      * Reads a signed 16 bit little endian number
      */
     public readSignedLShort(): number {
-        return this._buffer.readInt16LE(this.addOffset(2));
+        return this.buffer.readInt16LE(this.addOffset(2));
     }
 
     /**
@@ -132,14 +128,7 @@ class BinaryStream {
      */
     public readTriad(): bigint {
         // we need to replicate readUIntLE
-        return readUIntBE(this._buffer, this.addOffset(3), 3);
-    }
-
-    /**
-     * Reads a 3 byte unsigned little endian number
-     */
-    public readLTriad(): number {
-        return readUIntLE(this._buffer, this.addOffset(3), 3);
+        return this.readUIntBE(this.buffer, this.addOffset(3), 3);
     }
 
     /**
@@ -147,25 +136,31 @@ class BinaryStream {
      */
     public writeTriad(v: number): void {
         let buffer = Buffer.alloc(3);
-        writeUIntBE(buffer, v, 0, 3);
-        this.append(buffer);
+        this.writeUIntBE(buffer, v, 0, 3);
+        this.write(buffer);
     }
-
+    
+    /**
+     * Reads a 3 byte unsigned little endian number
+     */
+    public readLTriad(): number {
+        return this.readUIntLE(this.buffer, this.addOffset(3), 3);
+    }
 
     /**
      * Reads a 3 byte unsigned little endian number
      */
     public writeLTriad(v: number) {
-        let buf = Buffer.alloc(3);
-        writeUIntLE(buf, v, 0, 3);
-        this.append(buf);
+        let buffer = Buffer.alloc(3);
+        this.writeUIntLE(buffer, v, 0, 3);
+        this.write(buffer);
     }
 
     /**
      * Reads a 4 byte signed integer
      */
     public readInt(): number {
-        return this._buffer.readInt32BE(this.addOffset(4));
+        return this.buffer.readInt32BE(this.addOffset(4));
     }
 
     /**
@@ -174,14 +169,14 @@ class BinaryStream {
     public writeInt(v: number): void {
         let buffer = Buffer.alloc(4);
         buffer.writeInt32BE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
      * Reads a 4 byte signed little endian integer
      */
     public readLInt(): number {
-        return this._buffer.readInt32LE(this.addOffset(4));
+        return this.buffer.readInt32LE(this.addOffset(4));
     }
 
     /**
@@ -190,14 +185,210 @@ class BinaryStream {
     public writeLInt(v: number): void {
         let buffer = Buffer.alloc(4);
         buffer.writeInt32LE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
+
+    public readUIntLE(buffer: Buffer, offset: number, byteLength: number): number {
+        offset = offset >>> 0;
+        byteLength = byteLength >>> 0;
+
+        this.checkOffset(offset, byteLength);
+
+        let value: number = buffer[offset];
+        let multiplier: number = 1;
+        let i: number = 0;
+
+        while (++i < byteLength && (multiplier *= 0x100)) {
+            value += buffer[offset + i] * multiplier;
+        }
+
+        return value;
+    }
+
+
+    /**
+     * Replicates Node's <Buffer>.writeUIntLE
+     * @returns the new ending offset of the byte
+     */
+    public writeUIntLE(buffer: Buffer, value: number, offset: number, byteLength: number): number {
+        // increase offset
+        value = +value;
+        // shift our integers (checking if it's unsigned)
+        offset = offset >>> 0;
+        byteLength = byteLength >>> 0;
+
+        // this should be the maximum amount of bytes we can possibly write?
+        let maxBytes: number = Math.pow(2, (8 * byteLength) - 1);
+        // check to make sure we can actually write the bytes to this buffer.
+        this.checkInt(value, offset, byteLength, maxBytes, 0);
+
+        let i: number = 0;
+        let multiplier: number = 1;
+        buffer[offset] = value & 0xFF;
+        // check if its less than the byte length, otherwise stop (IM SO DUMB!)
+        while (++i < byteLength && (multiplier *= 0x100)) {
+            // continue writing the bytes
+            if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing UIntLE. Breaking...';
+            buffer[offset + i] = ((value / multiplier) >> 0) & 0xFF;
+        }
+
+        return offset + byteLength;
+    }
+
+    public readUIntBE(buffer: Buffer, offset: number, byteLength: number): bigint {
+		offset = offset >>> 0;
+		byteLength = byteLength >>> 0;
+
+		this.checkOffset(offset, byteLength);
+
+		let i: number = byteLength;
+		let value: number = buffer[offset + --i];
+		let multiplier: number = 1;
+		while (i > 0 && (multiplier *= 0x100)) {
+			value += buffer[offset + --i] * multiplier;
+		}
+
+		return BigInt(value);
+    }
+
+    /**
+    * Replicates Node's <Buffer>.writeUIntBE
+    * @returns the new ending offset of the byte
+    */
+    public writeUIntBE(buffer: Buffer, value: number, offset: number, byteLength: number): number {
+        value = +value;
+        offset = offset >>> 0;
+        byteLength = byteLength >>> 0;
+
+        // this should be the maximum amount of bytes we can possibly write?
+        let maxBytes: number = Math.pow(2, (8 * byteLength) - 1);
+        // TODO 
+        this.checkInt(value, offset, byteLength, maxBytes, 0);
+
+        let i: number = byteLength - 1;
+        let multiplier: number = 1;
+        buffer[offset + i] = value & 0xFF;
+        // In theory this should never cause issues, however it may, so in that case we're keeping recusive guard
+        while (--i >= 0 && (multiplier *= 0x100)) {
+            // continue writing the bytes
+            if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing UIntBE. Breaking...';
+            buffer[offset + i] = ((value / multiplier) >> 0) & 0xFF;
+        }
+
+        return offset + byteLength;
+    }
+
+    public readIntLE(buffer: Buffer, offset: number, byteLength: number): number {
+        // Shift our unsigned integers right. (checking)
+        offset = offset >>> 0;
+        byteLength = byteLength >>> 0;
+
+        this.checkOffset(offset, byteLength);
+
+        let value: number = buffer[offset];
+        let multiplier: number = 1;
+        let i: number = 0;
+        while (++i < byteLength && (multiplier *= 0x100)) {
+                if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected. Breaking...';
+                value += buffer[offset + i] * multiplier;
+        }
+        multiplier = 0x80;
+
+        if (value >= multiplier) {
+                value -= Math.pow(2, 8 * byteLength);
+        }
+        return value;
+    }
+
+    public writeIntLE(buffer: Buffer, value: number, offset: number, byteLength: number): number {
+        // increase offset
+        value = +value;
+        // shift our integers (checking if it's unsigned)
+        offset = offset >>> 0;
+   
+        // this should be the maximum amount of bytes we can possibly write?
+        let maxBytes: number = Math.pow(2, (8 * byteLength) - 1)
+        // check to make sure we can actually write the bytes to this buffer.
+        this.checkInt(value, offset, byteLength, maxBytes - 1, -maxBytes);
+   
+        let i: number = 0;
+        let multiplier: number = 1;
+        let sub: number = 0;
+        // write the initial byte
+        buffer[offset] = value & 0xFF;
+        while (i++ < byteLength && (multiplier *= 0x100)) {
+             if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing writeIntLE. Breaking...';
+             if (value < 0 && sub === 0 && buffer[offset + i - 1] !== 0) {
+                  sub = 1;
+             }
+             // continue writing the bytes
+             buffer[offset + i] = ((value / multiplier) >> 0) - sub & 0xFF;
+        }
+   
+        return offset + byteLength;
+   }   
+
+    /**
+    * Replicates Nodes <Buffer>.readIntBE
+    * @param buffer 
+    * @param offset 
+    * @param byteLength 
+    */
+    public readIntBE(buffer: Buffer, offset: number, byteLength: number = 1024): bigint {
+        // Shift our unsigned integers right. (checking)
+        offset = offset >>> 0;
+        byteLength = byteLength >>> 0;
+
+        this.checkOffset(offset, byteLength);
+
+        let i: number = byteLength;
+        let value: number = buffer[offset + --i];
+        let multiplier: number = 1;
+        while (i > 0 && (multiplier *= 0x100)) {
+                if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected. Breaking...';
+                value += buffer[offset + --i] * multiplier;
+        }
+        multiplier = 0x80;
+
+        if (value >= multiplier) {
+                value -= Math.pow(2, 8 * byteLength);
+        }
+        return BigInt(value);
+    }
+
+    public writeIntBE(buffer: Buffer, value: number, offset: number, byteLength: number): number {
+        // increase offset
+        value = +value;
+        // shift our integers (checking if it's unsigned)
+        offset = offset >>> 0;
+   
+        // this should be the maximum amount of bytes we can possibly write?
+        let maxBytes: number = Math.pow(2, (8 * byteLength) - 1)
+        // check to make sure we can actually write the bytes to this buffer.
+        this.checkInt(value, offset, byteLength, maxBytes - 1, -maxBytes);
+   
+        let i: number = byteLength - 1;
+        let multiplier: number = 1;
+        let sub: number = 0;
+        // write the initial byte
+        buffer[offset] = value & 0xFF;
+        while (--i >= 0 && (multiplier *= 0x100)) {
+             if (multiplier >= Infinity || multiplier <= -Infinity) throw 'Recursion detected in writing writeIntBE. Breaking...';
+             if (value < 0 && sub === 0 && buffer[offset + i - 1] !== 0) {
+                  sub = 1;
+             }
+             // continue writing the bytes
+             buffer[offset + i] = ((value / multiplier) >> 0) - sub & 0xFF;
+        }
+   
+        return offset + byteLength;
+   }
 
     /**
      * Reads a 4 byte floating-point number
      */
     public readFloat(): number {
-        return this._buffer.readFloatBE(this.addOffset(4));
+        return this.buffer.readFloatBE(this.addOffset(4));
     }
 
     /**
@@ -213,14 +404,14 @@ class BinaryStream {
     public writeFloat(v: number): void {
         let buffer = Buffer.alloc(4);
         buffer.writeFloatBE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
      * Reads a 4 byte little endian floating-point number
      */
     public readLFloat(): number {
-        return this._buffer.readFloatLE(this.addOffset(4));
+        return this.buffer.readFloatLE(this.addOffset(4));
     }
 
     /**
@@ -236,14 +427,14 @@ class BinaryStream {
     public writeLFloat(v: number): void {
         let buffer = Buffer.alloc(4);
         buffer.writeFloatLE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
      * Reads an 8 byte floating-point number
      */
     public readDouble(): number {
-        return this._buffer.readDoubleBE(this.addOffset(8));
+        return this.buffer.readDoubleBE(this.addOffset(8));
     }
 
     /**
@@ -252,14 +443,14 @@ class BinaryStream {
     public writeDouble(v: number): void {
         let buffer = Buffer.alloc(8);
         buffer.writeDoubleBE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
      * Reads an 8 byte little endian floating-point number
      */
     public readLDouble(): number {
-        return this._buffer.readDoubleLE(this.addOffset(8));
+        return this.buffer.readDoubleLE(this.addOffset(8));
     }
 
     /**
@@ -268,14 +459,14 @@ class BinaryStream {
     public writeLDouble(v: number): void {
         let buffer = Buffer.alloc(8);
         buffer.writeDoubleLE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
      * Reads an 8 byte integer
      */
     public readLong(): bigint {
-        return this._buffer.readBigInt64BE(this.addOffset(8));
+        return this.buffer.readBigInt64BE(this.addOffset(8));
     }
 
     /**
@@ -284,14 +475,14 @@ class BinaryStream {
     public writeLong(v: bigint): void {
         let buffer = Buffer.alloc(8);
         buffer.writeBigInt64BE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
      * Reads an 8 byte little endian integer
      */
     public readLLong(): bigint {
-        return this._buffer.readBigInt64LE(this.addOffset(8));
+        return this.buffer.readBigInt64LE(this.addOffset(8));
     }
 
     /**
@@ -300,7 +491,7 @@ class BinaryStream {
     public writeLLong(v: bigint): void {
         let buffer = Buffer.alloc(8);
         buffer.writeBigInt64LE(v);
-        this.append(buffer);
+        this.write(buffer);
     }
 
     /**
@@ -318,7 +509,8 @@ class BinaryStream {
     public readUnsignedVarInt() {
         let value = 0;
         for (let i = 0; i <= 28; i += 7) {
-            if (typeof this._buffer[this._offset] === 'undefined') {
+            if (typeof this.buffer[this.offset] === 'undefined') {
+                // safety lock
                 throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
@@ -352,13 +544,13 @@ class BinaryStream {
                 stream.writeByte(v | 0x80);
             } else {
                 stream.writeByte(v & 0x7f);
-                this.append(stream.buffer);
+                this.write(stream.buffer);
                 return;
             }
             v >>= 7;
         }
 
-        this.append(stream.buffer);
+        this.write(stream.buffer);
     }
 
     /**
@@ -376,7 +568,7 @@ class BinaryStream {
     public readUnsignedVarLong(): number {
         let value = 0;
         for (let i = 0; i <= 63; i += 7) {
-            if (typeof this._buffer[this._offset] === 'undefined') {
+            if (typeof this.buffer[this.offset] === 'undefined') {
                 throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
@@ -416,23 +608,22 @@ class BinaryStream {
      * Increase offset value by the given bytes.
      */
     public addOffset(v: number, r = false): number {
-        if (r) return this._offset += v;
-        return (this._offset += v) - v;
+        return r ? this.offset += v : (this.offset += v) - v;
     }
 
     /**
      * Returns whether the offset has reached the end of the buffer.
      */
     public feof() {
-        return typeof this._buffer[this._offset] === 'undefined';
+        return this.offset <= this.buffer.byteLength;
     }
 
     /**
      * Returns the remaining o
      */
     public readRemaining(): Buffer {
-        let buffer = this._buffer.slice(this._offset);
-        this._offset = this._buffer.length;
+        let buffer = this.buffer.slice(this.offset);
+        this.offset = this.buffer.length;
         return buffer;
     }
 
@@ -440,36 +631,25 @@ class BinaryStream {
      * Resets the offset to 0
      */
     public reset(): void {
-        this._buffer = Buffer.alloc(0);
-        this._offset = 0;
+        this.buffer = Buffer.alloc(0);
+        this.offset = 0;
     }
 
     /**
-     * Returns the offset of the stream
+     * Checks the byte offset to ensure we can write, throws an error if we can not.
+     * @param offset 
+     * @param byteLength 
      */
-    get offset(): number {
-        return this._offset;
+    private checkOffset(offset: number, byteLength: number): void {
+        // check if its an unsigned varint, we need this because floats can not be added to a buffer
+        if ((offset % 1) !== 0 || offset < 0) throw new RangeError("Offset out of bounds.");
+        if (offset + this.buffer.byteLength > this.buffer.length) throw new RangeError("Not enough bytes left in buffer");
     }
 
-    /**
-     * Sets the offset
-     */
-    set offset(offset) {
-        this._offset = offset;
-    }
-
-    /**
-     * Gets the buffer from the stream
-     */
-    get buffer(): Buffer {
-        return this._buffer;
-    }
-
-    /**
-     * Sets the buffer of the stream
-     */
-    set buffer(buffer: Buffer) {
-        this._buffer = buffer;
+    private checkInt(value: number, offset: number, ext: number, max: number, min: number): void {
+        // checks whether a value can be wwritten
+        if (value > max || value < min) throw new RangeError('"value" argument is out of bounds');
+        if (offset + ext > this.buffer.length) throw new RangeError('Index out of range');
     }
 }
 export default BinaryStream;
