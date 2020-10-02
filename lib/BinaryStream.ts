@@ -20,8 +20,9 @@
 import Buffer from 'https://deno.land/std/node/buffer.ts';
 
 class BinaryStream {
-    protected buffer: Buffer;
-    protected offset: number;
+    // These are exposed for ease, use this carefully.
+    public buffer: Buffer;
+    public offset: number;
 
     constructor(buffer: Buffer = Buffer.alloc(0), offset: number = 0) {
         this.buffer = buffer;
@@ -139,7 +140,7 @@ class BinaryStream {
         this.writeUIntBE(buffer, v, 0, 3);
         this.write(buffer);
     }
-    
+
     /**
      * Reads a 3 byte unsigned little endian number
      */
