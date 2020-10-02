@@ -38,7 +38,7 @@ class BinaryStream {
     }
 
     /**
-     *  Reads a buffer slice with the given length
+     * Reads a buffer slice with the given length
      * from the actual offset to the offset + len
      */
     public read(len: number): Buffer {
@@ -193,7 +193,7 @@ class BinaryStream {
         offset = offset >>> 0;
         byteLength = byteLength >>> 0;
 
-        this.checkOffset(offset, byteLength);
+        this.checkOffset(buffer, offset, byteLength);
 
         let value: number = buffer[offset];
         let multiplier: number = 1;
@@ -221,7 +221,7 @@ class BinaryStream {
         // this should be the maximum amount of bytes we can possibly write?
         let maxBytes: number = Math.pow(2, (8 * byteLength) - 1);
         // check to make sure we can actually write the bytes to this buffer.
-        this.checkInt(value, offset, byteLength, maxBytes, 0);
+        this.checkInt(buffer, value, offset, byteLength, maxBytes, 0);
 
         let i: number = 0;
         let multiplier: number = 1;
@@ -240,7 +240,7 @@ class BinaryStream {
 		offset = offset >>> 0;
 		byteLength = byteLength >>> 0;
 
-		this.checkOffset(offset, byteLength);
+		this.checkOffset(buffer, offset, byteLength);
 
 		let i: number = byteLength;
 		let value: number = buffer[offset + --i];
@@ -264,7 +264,7 @@ class BinaryStream {
         // this should be the maximum amount of bytes we can possibly write?
         let maxBytes: number = Math.pow(2, (8 * byteLength) - 1);
         // TODO 
-        this.checkInt(value, offset, byteLength, maxBytes, 0);
+        this.checkInt(buffer, value, offset, byteLength, maxBytes, 0);
 
         let i: number = byteLength - 1;
         let multiplier: number = 1;
@@ -284,7 +284,7 @@ class BinaryStream {
         offset = offset >>> 0;
         byteLength = byteLength >>> 0;
 
-        this.checkOffset(offset, byteLength);
+        this.checkOffset(buffer, offset, byteLength);
 
         let value: number = buffer[offset];
         let multiplier: number = 1;
@@ -310,7 +310,7 @@ class BinaryStream {
         // this should be the maximum amount of bytes we can possibly write?
         let maxBytes: number = Math.pow(2, (8 * byteLength) - 1)
         // check to make sure we can actually write the bytes to this buffer.
-        this.checkInt(value, offset, byteLength, maxBytes - 1, -maxBytes);
+        this.checkInt(buffer, value, offset, byteLength, maxBytes - 1, -maxBytes);
    
         let i: number = 0;
         let multiplier: number = 1;
@@ -340,7 +340,7 @@ class BinaryStream {
         offset = offset >>> 0;
         byteLength = byteLength >>> 0;
 
-        this.checkOffset(offset, byteLength);
+        this.checkOffset(buffer, offset, byteLength);
 
         let i: number = byteLength;
         let value: number = buffer[offset + --i];
@@ -366,7 +366,7 @@ class BinaryStream {
         // this should be the maximum amount of bytes we can possibly write?
         let maxBytes: number = Math.pow(2, (8 * byteLength) - 1)
         // check to make sure we can actually write the bytes to this buffer.
-        this.checkInt(value, offset, byteLength, maxBytes - 1, -maxBytes);
+        this.checkInt(buffer, value, offset, byteLength, maxBytes - 1, -maxBytes);
    
         let i: number = byteLength - 1;
         let multiplier: number = 1;
@@ -641,16 +641,16 @@ class BinaryStream {
      * @param offset 
      * @param byteLength 
      */
-    private checkOffset(offset: number, byteLength: number): void {
+    private checkOffset(buffer: Buffer, offset: number, byteLength: number): void {
         // check if its an unsigned varint, we need this because floats can not be added to a buffer
         if ((offset % 1) !== 0 || offset < 0) throw new RangeError("Offset out of bounds.");
-        if (offset + this.buffer.byteLength > this.buffer.length) throw new RangeError("Not enough bytes left in buffer");
+        if (offset + buffer.byteLength > buffer.length) throw new RangeError("Not enough bytes left in buffer");
     }
 
-    private checkInt(value: number, offset: number, ext: number, max: number, min: number): void {
+    private checkInt(buffer: Buffer, value: number, offset: number, ext: number, max: number, min: number): void {
         // checks whether a value can be wwritten
         if (value > max || value < min) throw new RangeError('"value" argument is out of bounds');
-        if (offset + ext > this.buffer.length) throw new RangeError('Index out of range');
+        if (offset + ext > buffer.length) throw new RangeError('Index out of range');
     }
 }
 export default BinaryStream;
