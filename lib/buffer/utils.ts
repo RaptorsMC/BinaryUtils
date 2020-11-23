@@ -1,4 +1,4 @@
-import type Buffer from 'https://deno.land/std/node/buffer.ts';
+import type Buffer from 'https://deno.land/std@0.70.0/node/buffer.ts';
 
 /**
  * Checks an offset to see whether it is out of bounds.

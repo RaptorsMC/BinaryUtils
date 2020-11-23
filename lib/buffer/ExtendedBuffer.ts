@@ -1,4 +1,4 @@
-import Buffer from 'https://deno.land/std/node/buffer.ts';
+import Buffer from 'https://deno.land/std@0.70.0/node/buffer.ts';
 import { readIntBE, readIntLE } from './readInt.ts';
 import { readUIntBE, readUIntLE } from './readUInt.ts';
 

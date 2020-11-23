@@ -17,7 +17,7 @@
  * @copyright https://github.com/RaptorsMC
  * @license RaptorsMC/CustomLicense
  */
-import Buffer from 'https://deno.land/std/node/buffer.ts';
+import Buffer from 'https://deno.land/std@0.70.0/node/buffer.ts';
 import { readUIntBE, readUIntLE } from './buffer/readUInt.ts';
 import { readIntBE, readIntLE } from './buffer/readInt.ts';
 import { writeUIntBE, writeUIntLE } from './buffer/writeUInt.ts';
