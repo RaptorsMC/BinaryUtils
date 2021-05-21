@@ -35,7 +35,7 @@ class BinaryStream {
     /**
      * Appends a buffer to the binary one.
      */
-    public append(buffer: Buffer): void {
+    public append(buffer: Buffer | Uint8Array): void {
         this._buffer = Buffer.concat([this._buffer, buffer]);
         this.addOffset(Buffer.byteLength(buffer));
     }
@@ -386,7 +386,7 @@ class BinaryStream {
                 return value;
             }
         }
-        
+
         throw new Error('VarInt did not terminate after 10 bytes!');
     }
 
