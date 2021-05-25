@@ -24,11 +24,11 @@ import { writeUIntBE, writeUIntLE } from './buffer/writeUInt.ts';
 import { writeIntBE, writeIntLE } from './buffer/writeInt.ts';
 
 class BinaryStream {
-    private _buffer: Buffer;
+    #buffer: Buffer;
     private _offset: number;
 
     constructor(buffer: Buffer | ArrayBufferLike = Buffer.alloc(0), offset: number = 0) {
-        this._buffer = (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) ? Buffer.from(buffer) : buffer;
+        this.#buffer = (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) ? Buffer.from(buffer) : buffer;
         this._offset = offset;
     }
 
@@ -36,7 +36,7 @@ class BinaryStream {
      * Appends a buffer to the binary one.
      */
     public append(buffer: Buffer | Uint8Array): void {
-        this._buffer = Buffer.concat([this._buffer, buffer]);
+        this.#buffer = Buffer.concat([this.#buffer, buffer]);
         this.addOffset(Buffer.byteLength(buffer));
     }
 
@@ -45,25 +45,25 @@ class BinaryStream {
      * from the actual offset to the offset + len
      */
     public read(len: number): Buffer {
-        return this._buffer.slice(this._offset, this.addOffset(len, true));
+        return this.#buffer.slice(this._offset, this.addOffset(len, true));
     }
 
     /**
      * Reads an unsigned byte (0 - 255)
      */
     public readByte(): number {
-        return this._buffer.readUInt8(this.addOffset(1));
+        return this.#buffer.readUInt8(this.addOffset(1));
     }
 
     /**
      * Reads a signed byte (-128 - 127)
      */
     public readSignedByte(): number {
-        return this._buffer.readInt8(this.addOffset(1));
+        return this.#buffer.readInt8(this.addOffset(1));
     }
 
     /**
-     * Writes an unsigned / signed byte 
+     * Writes an unsigned / signed byte
      */
     public writeByte(v: number): void {
         this.append(Buffer.from([v & 0xff]));
@@ -86,45 +86,65 @@ class BinaryStream {
     /**
      * Reads a 16 bit unsigned big endian number
      */
-    public readShort(): number {
-        return this._buffer.readUInt16BE(this.addOffset(2));
+    public readUShort(): number {
+        return this.#buffer.readUInt16BE(this.addOffset(2));
     }
 
     /**
-     * Reads a 16 bit signed big endian number
+     * Reads a 2 byte big endian within range 0x01 - 0xFF
      */
-    public readSignedShort(): number {
-        return this._buffer.readInt16BE(this.addOffset(2));
+    public readShort(): number {
+        return this.#buffer.readInt16BE(this.addOffset(2));
     }
 
     /**
-     * Writes a 16 bit signed / unsigned big endian number
+     * Writes a 16 bit signed BE
      */
     public writeShort(v: number): void {
-        this.writeByte((v >> 8) & 0xff);
-        this.writeByte(v & 0xff);
+        const val = Buffer.alloc(2);
+        val.writeInt16BE(v);
+        this.append(val);
+    }
+
+    /**
+     * Writes a unsigned BE of 2 bytes
+     */
+    public writeUShort(v: number): void {
+        const val = Buffer.alloc(2);
+        val.writeUInt16BE(v);
+        this.append(val);
     }
 
     /**
      * Reads an unsigned 16 bit little endian number
      */
-    public readLShort(): number {
-        return this._buffer.readUInt16LE(this.addOffset(2));
+    public readLUShort(): number {
+        return this.#buffer.readUInt16LE(this.addOffset(2));
     }
 
     /**
      * Reads a signed 16 bit little endian number
      */
-    public readSignedLShort(): number {
-        return this._buffer.readInt16LE(this.addOffset(2));
+    public readLShort(): number {
+        return this.#buffer.readInt16LE(this.addOffset(2));
     }
 
     /**
      * Writes a 16 bit signed / unsigned little endian number
      */
-    public writeLShort(v: number): void {
-        this.writeByte(v & 0xff);
-        this.writeByte((v >> 8) & 0xff);
+    public writeLUShort(v: number): void {
+        const val = Buffer.alloc(2);
+        val.writeUInt16LE(v);
+        this.append(val);
+    }
+
+    /**
+     * Writes a 16 bit signed / unsigned little endian number
+     */
+     public writeLShort(v: number): void {
+        const val = Buffer.alloc(2);
+        val.writeInt16LE(v);
+        this.append(val);
     }
 
     /**
@@ -132,14 +152,14 @@ class BinaryStream {
      */
     public readTriad(): bigint {
         // we need to replicate readUIntLE
-        return readUIntBE(this._buffer, this.addOffset(3), 3);
+        return readUIntBE(this.#buffer, this.addOffset(3), 3);
     }
 
     /**
      * Reads a 3 byte unsigned little endian number
      */
     public readLTriad(): number {
-        return readUIntLE(this._buffer, this.addOffset(3), 3);
+        return readUIntLE(this.#buffer, this.addOffset(3), 3);
     }
 
     /**
@@ -165,7 +185,7 @@ class BinaryStream {
      * Reads a 4 byte signed integer
      */
     public readInt(): number {
-        return this._buffer.readInt32BE(this.addOffset(4));
+        return this.#buffer.readInt32BE(this.addOffset(4));
     }
 
     /**
@@ -181,7 +201,7 @@ class BinaryStream {
      * Reads a 4 byte signed little endian integer
      */
     public readLInt(): number {
-        return this._buffer.readInt32LE(this.addOffset(4));
+        return this.#buffer.readInt32LE(this.addOffset(4));
     }
 
     /**
@@ -197,7 +217,7 @@ class BinaryStream {
      * Reads a 4 byte floating-point number
      */
     public readFloat(): number {
-        return this._buffer.readFloatBE(this.addOffset(4));
+        return this.#buffer.readFloatBE(this.addOffset(4));
     }
 
     /**
@@ -220,7 +240,7 @@ class BinaryStream {
      * Reads a 4 byte little endian floating-point number
      */
     public readLFloat(): number {
-        return this._buffer.readFloatLE(this.addOffset(4));
+        return this.#buffer.readFloatLE(this.addOffset(4));
     }
 
     /**
@@ -243,7 +263,7 @@ class BinaryStream {
      * Reads an 8 byte floating-point number
      */
     public readDouble(): number {
-        return this._buffer.readDoubleBE(this.addOffset(8));
+        return this.#buffer.readDoubleBE(this.addOffset(8));
     }
 
     /**
@@ -259,7 +279,7 @@ class BinaryStream {
      * Reads an 8 byte little endian floating-point number
      */
     public readLDouble(): number {
-        return this._buffer.readDoubleLE(this.addOffset(8));
+        return this.#buffer.readDoubleLE(this.addOffset(8));
     }
 
     /**
@@ -275,7 +295,7 @@ class BinaryStream {
      * Reads an 8 byte integer
      */
     public readLong(): bigint {
-        return this._buffer.readBigInt64BE(this.addOffset(8));
+        return this.#buffer.readBigInt64BE(this.addOffset(8));
     }
 
     /**
@@ -291,7 +311,7 @@ class BinaryStream {
      * Reads an 8 byte little endian integer
      */
     public readLLong(): bigint {
-        return this._buffer.readBigInt64LE(this.addOffset(8));
+        return this.#buffer.readBigInt64LE(this.addOffset(8));
     }
 
     /**
@@ -318,7 +338,7 @@ class BinaryStream {
     public readUnsignedVarInt() {
         let value = 0;
         for (let i = 0; i <= 28; i += 7) {
-            if (typeof this._buffer[this._offset] === 'undefined') {
+            if (typeof this.#buffer[this._offset] === 'undefined') {
                 throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
@@ -376,7 +396,7 @@ class BinaryStream {
     public readUnsignedVarLong(): number {
         let value = 0;
         for (let i = 0; i <= 63; i += 7) {
-            if (typeof this._buffer[this._offset] === 'undefined') {
+            if (typeof this.#buffer[this._offset] === 'undefined') {
                 throw new Error('No bytes left in buffer');
             }
             let b = this.readByte();
@@ -424,15 +444,15 @@ class BinaryStream {
      * Returns whether the offset has reached the end of the buffer.
      */
     public feof() {
-        return typeof this._buffer[this._offset] === 'undefined';
+        return typeof this.#buffer[this._offset] === 'undefined';
     }
 
     /**
      * Returns the remaining o
      */
     public readRemaining(): Buffer {
-        let buffer = this._buffer.slice(this._offset);
-        this._offset = this._buffer.length;
+        let buffer = this.#buffer.slice(this._offset);
+        this._offset = this.#buffer.length;
         return buffer;
     }
 
@@ -440,7 +460,7 @@ class BinaryStream {
      * Resets the offset to 0
      */
     public reset(): void {
-        this._buffer = Buffer.alloc(0);
+        this.#buffer = Buffer.alloc(0);
         this._offset = 0;
     }
 
@@ -462,14 +482,14 @@ class BinaryStream {
      * Gets the buffer from the stream
      */
     get buffer(): Buffer {
-        return this._buffer;
+        return this.#buffer;
     }
 
     /**
      * Sets the buffer of the stream
      */
     set buffer(buffer: Buffer) {
-        this._buffer = buffer;
+        this.#buffer = buffer;
     }
 }
 export default BinaryStream;
