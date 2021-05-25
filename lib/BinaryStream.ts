@@ -28,7 +28,7 @@ class BinaryStream {
     private _offset: number;
 
     constructor(buffer: Buffer | ArrayBufferLike = Buffer.alloc(0), offset: number = 0) {
-        this.#buffer = (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) ? Buffer.from(buffer) : buffer;
+        this.#buffer = (buffer instanceof ArrayBuffer || buffer instanceof Uint8Array || buffer instanceof SharedArrayBuffer) ? Buffer.from(buffer) : buffer;
         this._offset = offset;
     }
 
